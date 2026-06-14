@@ -13,7 +13,13 @@ param([switch]$DryRun)
 $p = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
 $target = $null
 while ($p) {
-    if ($p.Name -ieq 'claude.exe' -or $p.Name -ieq 'node.exe') { $target = $p; break }
+    # claude.exe is unambiguous. node.exe (npm/nvm/volta installs) only counts
+    # when its command line references claude, so we never kill an unrelated
+    # node ancestor (e.g. a version-manager shim) instead of the session.
+    if ($p.Name -ieq 'claude.exe' -or
+        ($p.Name -ieq 'node.exe' -and $p.CommandLine -and $p.CommandLine -match 'claude')) {
+        $target = $p; break
+    }
     if (-not $p.ParentProcessId -or $p.ParentProcessId -eq 0) { break }
     $p = Get-CimInstance Win32_Process -Filter "ProcessId=$($p.ParentProcessId)" -ErrorAction SilentlyContinue
 }
