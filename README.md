@@ -10,8 +10,15 @@ A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens �
 
 ## Install (Claude Code plugin)
 
+First add the marketplace on its own line — don't paste the install line in the same message (it gets swallowed into this one as a bad repo argument and the clone fails).
+
 ```
 /plugin marketplace add Zun-RZ/claude-remote-coding
+```
+
+Then install whichever you want (these two are fine together):
+
+```
 /plugin install remote-tabs@claude-remote-coding
 /plugin install selection-is-all-you-need@claude-remote-coding
 ```
@@ -24,7 +31,7 @@ That's it — no per-project setup, no files copied into your repo.
 - **`selection-is-all-you-need`** — makes Claude end every turn with an
   AskUserQuestion selection, which is the only thing that pushes a
   notification to your phone. It skips the question on explicit stop signals
-  (그만/끝/stop/exit). Install only the one(s) you want.
+  (그만/끝/stop/exit).
 
 > Heads up: `selection-is-all-you-need` ships a forced output style, so it
 > overrides any custom output style you've selected (your coding instructions
