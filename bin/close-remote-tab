@@ -1,0 +1,47 @@
+#!/bin/sh
+# End the CURRENT Claude Code session (the one the user is talking through).
+# Counterpart of bin/open-remote-tab; lives in bin/ so the Bash tool puts it on
+# PATH. Detects the OS via `uname`:
+#   - Windows (MINGW/MSYS/CYGWIN): hands off to scripts/close-remote-tab.ps1,
+#     which walks up to the current claude.exe and terminates it.
+#   - Linux / macOS: kills the current tmux session if inside one, otherwise
+#     walks up the parent chain to the current claude/node process and kills it.
+#
+# Killing the current session drops the connection; there is no final report.
+set -e
+
+case "$(uname -s)" in
+  MINGW* | MSYS* | CYGWIN*)
+    bindir="$(cd "$(dirname "$0")" && pwd)"
+    ps1="$bindir/../scripts/close-remote-tab.ps1"
+    if [ ! -f "$ps1" ]; then
+      echo "close-remote-tab: launcher not found at $ps1" >&2
+      exit 1
+    fi
+    ps1win="$(cygpath -w "$ps1")"
+    powershell.exe -ExecutionPolicy Bypass -File "$ps1win"
+    ;;
+  *)
+    if [ -n "$TMUX" ]; then
+      name="$(tmux display-message -p '#S')"
+      tmux kill-session -t "$name"
+      echo "session terminated (tmux: $name)"
+    else
+      pid=$$
+      target=""
+      while [ -n "$pid" ] && [ "$pid" -ge 2 ]; do
+        comm="$(ps -o comm= -p "$pid" 2>/dev/null | sed 's#.*/##')"
+        case "$comm" in
+          claude | node | claude.exe | node.exe) target="$pid"; break ;;
+        esac
+        pid="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')"
+      done
+      if [ -z "$target" ]; then
+        echo "close-remote-tab: could not locate the current claude session process" >&2
+        exit 1
+      fi
+      kill "$target"
+      echo "session terminated (pid $target)"
+    fi
+    ;;
+esac
