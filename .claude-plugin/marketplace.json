@@ -11,7 +11,7 @@
     {
       "name": "selection-is-all-you-need",
       "source": "./plugins/selection-is-all-you-need",
-      "description": "End every turn with an AskUserQuestion so it pushes to your phone."
+      "description": "End every turn with an AskUserQuestion selection — the surest trigger for a mobile push."
     }
   ]
 }

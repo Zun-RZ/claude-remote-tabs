@@ -1,7 +1,7 @@
 {
   "name": "selection-is-all-you-need",
   "version": "1.0.0",
-  "description": "End every assistant turn with an AskUserQuestion selection so Claude Code pushes a notification to your phone.",
+  "description": "End every Claude Code turn with an AskUserQuestion selection — the surest trigger for a mobile push notification.",
   "author": { "name": "Zun-RZ" },
   "homepage": "https://github.com/Zun-RZ/claude-remote-coding",
   "repository": "https://github.com/Zun-RZ/claude-remote-coding",

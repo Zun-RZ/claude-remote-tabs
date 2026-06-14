@@ -37,6 +37,21 @@ No per-project setup — nothing is copied into your repo.
 > are preserved via `keep-coding-instructions`). If two forced-style plugins
 > are enabled, the first one loaded wins.
 
+## Example use cases
+
+**`remote-tabs`**
+
+- From your phone, say *"open a new background session for this project"* and a detached session spins up (minimized terminal on Windows, `tmux` on Linux/WSL) that you pick up on claude.ai/code.
+- Walk away from your desktop and keep long-running work (builds, refactors) going in the background, fully driven from the mobile app.
+- End the session you're currently in with plain language — just say *"close this session."*
+- Launch several tasks as independent sessions and switch between them like tabs on your phone.
+
+**`selection-is-all-you-need`**
+
+- Hand off a task from mobile and get the end-of-turn options delivered as a push, so you never miss when Claude needs you.
+- During long-running work, get an actionable selection prompt instead of a silent text reply that leaves you unaware.
+- Questions and options are generated in your own language and answered with a single tap on your phone.
+
 ## First open a session locally, then go mobile
 
 You can't bootstrap from a cold start on your phone: opening a session needs a Claude Code agent already running to execute the command. So **start your first session on the desktop the normal way** (`claude`), then from that session ask it to *"open a new session"*. From then on every running session — including ones you opened remotely — can spawn more, so you can keep adding tabs straight from the mobile app.
