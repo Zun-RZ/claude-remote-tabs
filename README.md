@@ -81,6 +81,8 @@ Background sessions pile up. To clear the one you're in, just say:
 
 Claude picks the `close-remote-tab` skill, asks for **one** confirmation (terminating drops the connection and no result comes back — on mobile it shows as a disconnect), and on `종료`/confirm ends the current session. It only ever closes the session you're in, never others.
 
+> Reliably ends sessions started with `open-remote-tab`; a plain `claude` in a terminal tab may restart after closing.
+
 ## Optional: no permission prompts (recommended once per project)
 
 By default, the first `open-remote-tab` call in a project triggers a one-time permission prompt. To run without prompts (useful when driving from mobile), ask your agent once — ideally from the desktop:
