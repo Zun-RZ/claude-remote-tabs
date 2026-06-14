@@ -12,8 +12,8 @@ The user wants to end the session they are currently in.
 1. **Confirm once, with `AskUserQuestion`.** Make the consequence explicit in the
    question: terminating this session drops the connection and **no result will
    be reported back** (on mobile it shows as a disconnect). Offer two options:
-   `종료` (terminate) and `취소` (cancel).
-2. **Only if the user picks `종료`**, terminate the session — pick by OS:
+   `Terminate` and `Cancel`.
+2. **Only if the user picks `Terminate`**, terminate the session — pick by OS:
    - **Windows:** run this plugin's `scripts/close-remote-tab.ps1` via the
      **PowerShell tool** (e.g. `& "<this-plugin>/scripts/close-remote-tab.ps1"`).
      Do **not** use the Bash tool on Windows: its Git Bash shell is not reliably
@@ -23,7 +23,7 @@ The user wants to end the session they are currently in.
      succeeds.
    - **Linux / macOS / WSL:** run `close-remote-tab` via the Bash tool.
 
-   If they pick `취소`, do nothing.
+   If they pick `Cancel`, do nothing.
 3. After running it, the session is gone — do **not** attempt any further
    response (you cannot report back).
 4. If the script errors (e.g. "could not locate the current claude session
