@@ -10,28 +10,27 @@ A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens �
 
 ## Install (Claude Code plugin)
 
-First add the marketplace on its own line — don't paste the install line in the same message (it gets swallowed into this one as a bad repo argument and the clone fails).
+Add the marketplace first — on its own line. Don't paste an install line in the same message (it gets swallowed into this one as a bad repo argument and the clone fails).
 
 ```
 /plugin marketplace add Zun-RZ/claude-remote-coding
 ```
 
-Then install whichever you want (these two are fine together):
+### Install Two Plugins
 
-```
-/plugin install remote-tabs@claude-remote-coding
-/plugin install selection-is-all-you-need@claude-remote-coding
-```
+Install whichever you want — **one at a time** (each `/plugin` line on its own message).
 
-That's it — no per-project setup, no files copied into your repo.
+- **`remote-tabs`** — open/close background remote-control sessions.
+  ```
+  /plugin install remote-tabs@claude-remote-coding
+  ```
+- **`selection-is-all-you-need`** — it pushes a notification to your phone at the end of every turn, and it also helps your decisions.
+  With explicit stop signals (종료, 그만, stop, exit, etc.), it skips the AskUserQuestion.
+  ```
+  /plugin install selection-is-all-you-need@claude-remote-coding
+  ```
 
-### Two plugins, install either
-
-- **`remote-tabs`** — open/close background remote-control sessions (below).
-- **`selection-is-all-you-need`** — makes Claude end every turn with an
-  AskUserQuestion selection, which is the only thing that pushes a
-  notification to your phone. It skips the question on explicit stop signals
-  (그만/끝/stop/exit).
+No per-project setup — nothing is copied into your repo.
 
 > Heads up: `selection-is-all-you-need` ships a forced output style, so it
 > overrides any custom output style you've selected (your coding instructions
