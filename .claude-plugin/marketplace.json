@@ -1,8 +1,17 @@
 {
-  "name": "remote-tabs",
+  "name": "claude-remote-coding",
   "owner": { "name": "Zun-RZ" },
-  "description": "Background remote-control sessions for Claude Code.",
+  "description": "Drive Claude Code from your phone: background remote-control sessions, and AskUserQuestion-on-every-turn mobile pushes.",
   "plugins": [
-    { "name": "remote-tabs", "source": ".", "description": "Open background remote-control sessions." }
+    {
+      "name": "remote-tabs",
+      "source": "./plugins/remote-tabs",
+      "description": "Open and close background remote-control sessions by voice/text."
+    },
+    {
+      "name": "selection-is-all-you-need",
+      "source": "./plugins/selection-is-all-you-need",
+      "description": "End every turn with an AskUserQuestion so it pushes to your phone."
+    }
   ]
 }
