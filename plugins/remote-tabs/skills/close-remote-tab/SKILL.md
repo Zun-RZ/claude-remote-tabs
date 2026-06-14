@@ -30,3 +30,7 @@ The user wants to end the session they are currently in.
    process"), the session is still alive — surface the error verbatim.
 
 Only ever close the current session. This skill never closes other sessions.
+
+**Limitation:** reliably terminates only sessions started with
+`open-remote-tab`. Other sessions (e.g. a plain `claude` in a terminal tab) may
+restart after a kill.
