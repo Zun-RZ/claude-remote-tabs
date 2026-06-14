@@ -11,11 +11,25 @@ A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens �
 ## Install (Claude Code plugin)
 
 ```
-/plugin marketplace add Zun-RZ/claude-remote-tabs
-/plugin install remote-tabs@remote-tabs
+/plugin marketplace add Zun-RZ/claude-remote-coding
+/plugin install remote-tabs@claude-remote-coding
+/plugin install selection-is-all-you-need@claude-remote-coding   # optional: mobile pushes
 ```
 
 That's it — no per-project setup, no files copied into your repo.
+
+### Two plugins, install either
+
+- **`remote-tabs`** — open/close background remote-control sessions (below).
+- **`selection-is-all-you-need`** — makes Claude end every turn with an
+  AskUserQuestion selection, which is the only thing that pushes a
+  notification to your phone. It skips the question on explicit stop signals
+  (그만/끝/stop/exit). Install only the one(s) you want.
+
+> Heads up: `selection-is-all-you-need` ships a forced output style, so it
+> overrides any custom output style you've selected (your coding instructions
+> are preserved via `keep-coding-instructions`). If two forced-style plugins
+> are enabled, the first one loaded wins.
 
 ## First open a session locally, then go mobile
 
