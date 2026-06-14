@@ -1,4 +1,4 @@
-<h1 align="center">claude-remote-tabs</h1>
+<h1 align="center">claude-remote-coding</h1>
 
 <p align="center"><strong><em>DO YOU GUYS NOT HAVE PHONES?</em></strong></p>
 
