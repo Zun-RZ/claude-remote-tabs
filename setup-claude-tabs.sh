@@ -50,6 +50,8 @@ else
 - "Open a new session" / "open a new tab" → run \`$claudeDir/open-remote-tab.sh\` (each call starts a new remote-control session)
 - Install in another project: from the target project root, run
   \`sh $srcDir/setup-claude-tabs.sh\` (idempotent)
+- ⚠️ A session opened this way is NOT saved locally — the conversation lives only
+  on claude.ai/code (web).
 EOF
     echo 'CLAUDE.md: section added'
 fi

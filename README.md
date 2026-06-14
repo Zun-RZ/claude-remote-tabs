@@ -2,15 +2,11 @@
 
 Open background [Claude Code](https://docs.claude.com/en/docs/claude-code) **Remote Control** sessions for any project — one command, no stolen window focus — so you can drive them from the Claude mobile app / claude.ai/code.
 
-Each call starts a new, independent session that runs **locally** (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) and toggles remote control, so it shows up in your mobile/web session list while still being saved on your machine.
+Each call starts a new, independent session in the background (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) with remote control enabled, so it shows up in your mobile/web session list and you can drive it from the Claude mobile app.
 
-## Why the slash command, not the start flag
+## Note: these sessions are not saved locally
 
-`claude --remote-control` (the start flag) does **not** persist the session to local storage: you can't `--resume`/`--teleport` it, the local file is an empty stub, and the conversation lives only on claude.ai/code.
-
-These scripts instead start a normal local session and pass `/remote-control` as the **initial prompt**, which toggles remote control *inside* a locally-saved session — so the session is both remotely controllable **and** reopenable locally.
-
-> Suspected Claude Code bug: the docs say both entry points behave the same; in practice the start flag doesn't persist the transcript locally.
+A remote-control session opened this way is **not** persisted to local storage — the conversation lives only on claude.ai/code (web), and the local file is an empty stub (so `claude --resume` won't reopen the transcript). This holds regardless of the terminal host (a plain console or Windows Terminal).
 
 ## Requirements
 
