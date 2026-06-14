@@ -24,8 +24,8 @@ Install whichever you want — **one at a time** (each `/plugin` line on its own
   ```
   /plugin install remote-tabs@claude-remote-coding
   ```
-- **`selection-is-all-you-need`** — it pushes a notification to your phone at the end of every turn, and it also helps your decisions.
-  With explicit stop signals (종료, 그만, stop, exit, etc.), it skips the AskUserQuestion.
+- **`selection-is-all-you-need`** — It sends a notification to your phone at the end of every turn. Also, it will help with your decision.  
+&emsp;If an explicit stop signal (종료, 그만, stop, exit, etc.) is given, it skips the AskUserQuestion.
   ```
   /plugin install selection-is-all-you-need@claude-remote-coding
   ```
