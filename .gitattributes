@@ -3,3 +3,4 @@
 bin/open-remote-tab text eol=lf
 bin/close-remote-tab text eol=lf
 *.ps1 text eol=crlf
+*.png binary
