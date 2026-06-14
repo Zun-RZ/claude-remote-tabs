@@ -20,7 +20,7 @@ Add the marketplace first — on its own line. Don't paste an install line in th
 
 Install whichever you want — **one at a time** (each `/plugin` line on its own message).
 
-- **`remote-tabs`** — open/close background remote-control sessions.
+- **`remote-tabs`** — open or close a background remote-control session by chatting in plain language (e.g. *"open a new session"*); start it on your PC and drive it from your phone (Claude mobile app).
   ```
   /plugin install remote-tabs@claude-remote-coding
   ```
