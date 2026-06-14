@@ -54,6 +54,10 @@ By default, the first `open-remote-tab` call in a project triggers a one-time pe
 
 That runs the `setup-remote-tabs` skill, which merges `Bash(open-remote-tab*)` into the project's `.claude/settings.json` allow-list and sets `permissions.defaultMode` to `auto` (only if not already set). It's idempotent and never overrides existing values.
 
+## First run in a new folder: trust it
+
+When you open a session in a folder Claude Code hasn't opened before, the new background session pauses on a one-time **"Do you trust the files in this folder?"** prompt. Approve it (from the mobile app / web) before the session can start working.
+
 ## Requirements
 
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) CLI (`claude` on your `PATH`)
