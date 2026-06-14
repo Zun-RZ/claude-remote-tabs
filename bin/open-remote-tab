@@ -1,0 +1,42 @@
+#!/bin/sh
+# Start a NEW background Claude Code remote-control session for the current
+# project. Single POSIX entry point for the remote-tabs plugin; lives in bin/
+# so the Bash tool puts it on PATH (Git Bash on Windows too).
+#
+# Detects the OS via `uname`:
+#   - Windows (MINGW/MSYS/CYGWIN): hands off to scripts/open-remote-tab.ps1,
+#     which launches a minimized PowerShell window running `claude --remote-control`.
+#   - Linux / macOS: creates a detached tmux session running the same.
+#
+# NOTE: a `--remote-control` session is NOT saved locally — the conversation
+# lives only on claude.ai/code (web); the local .jsonl is an empty stub.
+set -e
+
+root="$(pwd)"
+proj="$(echo "$root" | tr 'A-Z' 'a-z' | tr ':/\\' '---')"
+sec="$(date +%s)"
+uid="$sec-$$"
+
+case "$(uname -s)" in
+  MINGW* | MSYS* | CYGWIN*)
+    # Resolve sibling scripts/open-remote-tab.ps1 relative to this script.
+    bindir="$(cd "$(dirname "$0")" && pwd)"
+    ps1="$bindir/../scripts/open-remote-tab.ps1"
+    if [ ! -f "$ps1" ]; then
+      echo "open-remote-tab: launcher not found at $ps1" >&2
+      exit 1
+    fi
+    ps1win="$(cygpath -w "$ps1")"
+    powershell.exe -ExecutionPolicy Bypass -File "$ps1win"
+    ;;
+  *)
+    if ! command -v tmux >/dev/null 2>&1; then
+      echo "open-remote-tab: tmux is required. Install it (brew install tmux / apt install tmux) and retry." >&2
+      exit 1
+    fi
+    name="claude-remote-$proj-$uid"
+    claude_bin="$(command -v claude || echo "$HOME/.local/bin/claude")"
+    tmux new-session -d -s "$name" -c "$root" "$claude_bin --remote-control"
+    echo "remote session started (tmux: $name)"
+    ;;
+esac

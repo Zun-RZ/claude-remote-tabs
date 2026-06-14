@@ -1,0 +1,8 @@
+{
+  "name": "remote-tabs",
+  "owner": { "name": "Zun-RZ" },
+  "description": "Background remote-control sessions for Claude Code.",
+  "plugins": [
+    { "name": "remote-tabs", "source": ".", "description": "Open background remote-control sessions." }
+  ]
+}

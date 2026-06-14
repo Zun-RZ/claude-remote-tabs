@@ -1,0 +1,10 @@
+{
+  "name": "remote-tabs",
+  "version": "1.0.0",
+  "description": "Open background Claude Code remote-control sessions by voice/text — drive them from the Claude mobile app.",
+  "author": { "name": "Zun-RZ" },
+  "homepage": "https://github.com/Zun-RZ/claude-remote-tabs",
+  "repository": "https://github.com/Zun-RZ/claude-remote-tabs",
+  "license": "MIT",
+  "keywords": ["remote-control", "mobile", "background", "tmux", "session"]
+}

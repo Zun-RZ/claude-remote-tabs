@@ -1,13 +1,14 @@
-# Start a Remote Control session for this project in a minimized terminal.
-# Fully background: no focus change, no keystroke injection, no VS Code needed.
-# Each call starts a NEW, independent session (unique marker + PID file) so
-# multiple remote sessions can run side by side for the same project.
+# Windows launcher for the remote-tabs plugin (invoked by bin/open-remote-tab).
+# Starts a NEW, independent Claude Code remote-control session in a MINIMIZED
+# PowerShell window: no focus change, no keystroke injection, no VS Code needed.
+# The window is visible in the taskbar so the user can find/close it manually;
+# the shell exits by itself when claude ends (no -NoExit).
 #
-# NOTE (2026-06-14): a `--remote-control` session is NOT saved locally — the
-# conversation lives only on claude.ai/code (web); the local .jsonl is an empty stub.
+# NOTE: a `--remote-control` session is NOT saved locally — the conversation
+# lives only on claude.ai/code (web); the local .jsonl is an empty stub.
 $root = (Get-Location).Path
 $proj = $root.ToLower() -replace '[:\\/]', '-'
-$uid = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+$uid = "$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())-$PID"
 $pidFile = Join-Path $env:TEMP "claude-remote-session-$proj-$uid.pid"
 
 $marker = "claude-remote-$proj-$uid"
@@ -19,8 +20,6 @@ $pwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
 if ($pwshCmd) { $shell = $pwshCmd.Source }
 elseif (Test-Path "$env:ProgramFiles\PowerShell\7\pwsh.exe") { $shell = "$env:ProgramFiles\PowerShell\7\pwsh.exe" }
 
-# Minimized host window: visible in the taskbar so the user can find/close it
-# manually; the shell exits by itself when claude ends (no -NoExit).
 $p = Start-Process $shell -ArgumentList '-Command', $cmd `
     -WorkingDirectory $root -WindowStyle Minimized -PassThru
 [System.IO.File]::WriteAllText($pidFile, [string]$p.Id)

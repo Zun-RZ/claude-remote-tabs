@@ -1,68 +1,64 @@
 # claude-remote-tabs
 
-Open background [Claude Code](https://docs.claude.com/en/docs/claude-code) **Remote Control** sessions for any project — one command, no stolen window focus — so you can drive them from the Claude mobile app / claude.ai/code.
+A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens background **Remote Control** sessions for the current project — by voice or text, with no stolen window focus — so you can drive them from the Claude mobile app / claude.ai/code.
 
-Each call starts a new, independent session in the background (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) with remote control enabled, so it shows up in your mobile/web session list and you can drive it from the Claude mobile app.
+Just tell your agent "open a new session" and it starts a new, independent session in the background (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) with remote control enabled. It shows up in your mobile/web session list, ready to drive from your phone.
 
 ## Note: these sessions are not saved locally
 
-A remote-control session opened this way is **not** persisted to local storage — the conversation lives only on claude.ai/code (web), and the local file is an empty stub (so `claude --resume` won't reopen the transcript). This holds regardless of the terminal host (a plain console or Windows Terminal).
+A remote-control session opened this way is **not** persisted to local storage — the conversation lives only on claude.ai/code (web), and the local file is an empty stub (so `claude --resume` won't reopen the transcript).
 
 ## Requirements
 
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) CLI (`claude` on your `PATH`)
-- **Windows:** PowerShell 5.1 or 7+
-- **Linux / WSL:** `tmux`, plus `python3` (used by the installer)
+- **Windows:** PowerShell 5.1 or 7+, plus Git Bash (bundled with Git for Windows — the plugin's entry point runs through the Bash tool)
+- **Linux / WSL / macOS:** `tmux`
 
-## Install (per project)
+## Install
 
-First clone this repo somewhere stable, e.g. `~/.claude/claude-remote-tabs`:
-
-```sh
-git clone https://github.com/Zun-RZ/claude-remote-tabs ~/.claude/claude-remote-tabs
+```
+/plugin marketplace add Zun-RZ/claude-remote-tabs
+/plugin install remote-tabs@remote-tabs
 ```
 
-Then, from the **target project root** you want to enable remote tabs in, run the installer with the path to your clone:
-
-**Windows**
-```powershell
-& $HOME\.claude\claude-remote-tabs\setup-claude-tabs.ps1
-```
-
-**Linux / WSL**
-```sh
-sh ~/.claude/claude-remote-tabs/setup-claude-tabs.sh
-```
-
-The installer is idempotent and:
-
-- copies `open-remote-tab.{ps1,sh}` into the project's `.claude/`
-- merges allow-rules + `defaultMode: auto` into `.claude/settings.json`
-- appends a short "Remote sessions" section to the project's `CLAUDE.md` (only if missing)
+That's it — no per-project setup, no files copied into your repo.
 
 ## Usage
 
-From the project root — or just ask your agent ("open a new session"), since the installer wired the `CLAUDE.md` instruction and the allow-rule:
+Just ask your agent, in any project:
 
-**Windows**
-```powershell
-& .\.claude\open-remote-tab.ps1
-```
+> open a new session
 
-**Linux / WSL**
-```sh
-.claude/open-remote-tab.sh
-```
+(or "open a new remote tab", "open a session I can drive from my phone", …)
 
-Each invocation starts a new background session. On Windows it opens a **minimized** terminal (visible in the taskbar so you can close it manually); on Linux/WSL it creates a **detached `tmux`** session named `claude-remote-<project>-<timestamp>`. The shell exits by itself when `claude` ends.
+Claude picks the `open-remote-tab` skill automatically and starts a new background remote-control session. Each invocation starts a **new, independent** session, so multiple can run side by side for the same project.
 
-## Files
+- **Windows:** a **minimized** PowerShell window (visible in the taskbar so you can close it manually).
+- **Linux / WSL / macOS:** a **detached `tmux`** session named `claude-remote-<project>-<sec>-<pid>`.
 
-| File | Purpose |
+The shell exits by itself when `claude` ends.
+
+## Optional: no permission prompts (recommended once per project)
+
+By default, the first `open-remote-tab` call in a project triggers a one-time permission prompt. To run without prompts (useful when driving from mobile), ask your agent once — ideally from the desktop:
+
+> set up remote tabs for this project
+
+That runs the `setup-remote-tabs` skill, which merges `Bash(open-remote-tab*)` into the project's `.claude/settings.json` allow-list and sets `permissions.defaultMode` to `auto` (only if not already set). It's idempotent and never overrides existing values.
+
+## Skills
+
+| Skill | Purpose |
 |---|---|
-| `open-remote-tab.ps1` / `.sh` | Start one background remote-control session (Windows / Linux-WSL) |
-| `setup-claude-tabs.ps1` / `.sh` | Per-project installer (copies the open script, wires `settings.json` + `CLAUDE.md`) |
-| `remote-tab-claude-section.md` | Template the Windows installer appends to a project's `CLAUDE.md` |
+| `open-remote-tab` | Start one background remote-control session for the current project |
+| `setup-remote-tabs` | One-time opt-in: wire `.claude/settings.json` so sessions run without prompts |
+
+## How it works
+
+`bin/open-remote-tab` is a single POSIX entry point exposed on the Bash tool's `PATH`. It detects the OS via `uname`:
+
+- **Windows** (Git Bash) → hands off to `scripts/open-remote-tab.ps1`, which launches the minimized PowerShell window running `claude --remote-control`.
+- **Linux / macOS** → creates the detached `tmux` session running the same.
 
 ## License
 
