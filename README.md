@@ -81,6 +81,8 @@ Background sessions pile up. To clear the one you're in, just say:
 
 Claude picks the `close-remote-tab` skill, asks for **one** confirmation (terminating drops the connection and no result comes back — on mobile it shows as a disconnect), and on `종료`/confirm ends the current session. It only ever closes the session you're in, never others.
 
+**Skip the confirmation — `#@stop#@`:** send the exact keyword `#@stop#@` as the main content of a message and the session closes **immediately**, with no confirmation prompt. Use this when you're sure and don't want the extra tap, or when plain phrasing like "close this session" gets misread as just ending the current task. The keyword is deliberately odd so it won't fire by accident; it only triggers a fast close when it's the main thing you sent (not buried inside an unrelated message).
+
 > Reliably ends sessions started with `open-remote-tab`; a plain `claude` in a terminal tab may restart after closing.
 
 ~~## Optional: no permission prompts (recommended once per project)~~
@@ -111,7 +113,7 @@ A remote-control session opened this way is **not** persisted to local storage �
 | Skill | Purpose |
 |---|---|
 | `open-remote-tab` | Start one background remote-control session for the current project |
-| `close-remote-tab` | End the current session (after one confirmation) — keeps zombie sessions from piling up |
+| `close-remote-tab` | End the current session (after one confirmation, or instantly with the `#@stop#@` keyword) — keeps zombie sessions from piling up |
 | `setup-remote-tabs` | One-time opt-in: wire `.claude/settings.json` so sessions run without prompts |
 
 ## How it works

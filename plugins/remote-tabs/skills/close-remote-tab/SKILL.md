@@ -2,18 +2,32 @@
 name: close-remote-tab
 description: Use when the user asks to close, end, terminate, or quit the
   current session — e.g. "이 세션 종료", "close this session", "세션 끝내",
-  "end this session". Ends the very session the user is currently in.
+  "end this session" — OR sends the exact fast-close keyword `#@stop#@` as the
+  main content of their message. Ends the very session the user is currently in.
 ---
 
 # Close the current session
 
 The user wants to end the session they are currently in.
 
+## Fast close (`#@stop#@`)
+
+If the user's message is essentially just the keyword `#@stop#@` — it is the
+**main content** of the input (trivial surrounding whitespace, or at most a word
+or two, is fine) — then **skip the confirmation** and go straight to terminating
+the session (step 2 below). This keyword is a deliberate, unambiguous "kill now"
+signal, so do **not** ask `AskUserQuestion` first.
+
+Do **not** fast-close if the keyword merely appears buried inside an otherwise
+unrelated message — that is not the main content. For any other phrasing
+("close this session", "이 세션 종료", …), follow the normal confirm-first flow.
+
 1. **Confirm once, with `AskUserQuestion`.** Make the consequence explicit in the
    question: terminating this session drops the connection and **no result will
    be reported back** (on mobile it shows as a disconnect). Offer two options:
    `Terminate` and `Cancel`.
-2. **Only if the user picks `Terminate`**, terminate the session — pick by OS:
+2. **Terminate the session** (reached either via the fast-close path above, or
+   only once the user picks `Terminate` in step 1) — pick the command by OS:
    - **Windows:** run this plugin's `scripts/close-remote-tab.ps1` via the
      **PowerShell tool** (e.g. `& "<this-plugin>/scripts/close-remote-tab.ps1"`).
      Do **not** use the Bash tool on Windows: its Git Bash shell is not reliably
