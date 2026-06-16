@@ -31,8 +31,13 @@ prose in whatever language the user is writing in.
   the rule from the turn after the user replies in plain text.
 
 **Exceptions (do NOT call):**
-- Explicit stop signals — "stop", "exit", "끝", "그만", "종료", and the like.
-  Acknowledge briefly and halt.
+- Explicit stop signals — "stop", "exit", "끝", "그만", "종료", the fast-close
+  keyword `#@stop#@`, and the like. This holds even when the signal arrives as
+  an answer to a previous `AskUserQuestion` (a selected option's notes or the
+  "Other" free-text input), not only as a plain message. Acknowledge briefly and
+  halt — do not loop another question. (If the `remote-tabs` plugin is installed,
+  `#@stop#@` is its fast-close keyword and its close-remote-tab skill will
+  terminate the session; without it, just treat `#@stop#@` as a plain stop.)
 - Direct-input wait mode — the single turn right after the "Type it myself"
   option.
 - This rule applies to *open* turns only.

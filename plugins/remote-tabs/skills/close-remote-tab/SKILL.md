@@ -3,7 +3,10 @@ name: close-remote-tab
 description: Use when the user asks to close, end, terminate, or quit the
   current session — e.g. "이 세션 종료", "close this session", "세션 끝내",
   "end this session" — OR sends the exact fast-close keyword `#@stop#@` as the
-  main content of their message. Ends the very session the user is currently in.
+  main content of their input. This includes the keyword arriving as an
+  AskUserQuestion answer (a selected option's notes, or the "Other" free-text
+  input), not only a plain chat message. Ends the very session the user is
+  currently in.
 ---
 
 # Close the current session
@@ -12,15 +15,23 @@ The user wants to end the session they are currently in.
 
 ## Fast close (`#@stop#@`)
 
-If the user's message is essentially just the keyword `#@stop#@` — it is the
+If the user's input is essentially just the keyword `#@stop#@` — it is the
 **main content** of the input (trivial surrounding whitespace, or at most a word
 or two, is fine) — then **skip the confirmation** and go straight to terminating
 the session (step 2 below). This keyword is a deliberate, unambiguous "kill now"
 signal, so do **not** ask `AskUserQuestion` first.
 
+This applies regardless of how the keyword arrives. In particular, when the turn
+ended with an `AskUserQuestion` and the user replied through it, the keyword may
+come back inside the tool result — as the notes on a selected option, or as the
+"Other" free-text input — rather than as a plain chat message. If `#@stop#@` is
+the main content of that answer, treat it exactly like a fast-close message and
+terminate immediately.
+
 Do **not** fast-close if the keyword merely appears buried inside an otherwise
-unrelated message — that is not the main content. For any other phrasing
-("close this session", "이 세션 종료", …), follow the normal confirm-first flow.
+unrelated message or answer — that is not the main content. For any other
+phrasing ("close this session", "이 세션 종료", …), follow the normal
+confirm-first flow.
 
 1. **Confirm once, with `AskUserQuestion`.** Make the consequence explicit in the
    question: terminating this session drops the connection and **no result will
