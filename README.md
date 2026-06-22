@@ -66,10 +66,37 @@ Just ask your agent, in any project:
 
 Claude picks the `open-remote-tab` skill automatically and starts a new background remote-control session. Each invocation starts a **new, independent** session, so multiple can run side by side for the same project.
 
-- **Windows:** a **minimized** PowerShell window (visible in the taskbar so you can close it manually).
+- **Windows:** a **minimized** window (visible in the taskbar so you can close it manually).
 - **Linux / WSL / macOS:** a **detached `tmux`** session named `claude-remote-<project>-<sec>-<pid>`.
 
 The shell exits by itself when `claude` ends.
+
+### Keystroke bridge: trigger `/clear` & co. from your phone
+
+Built-in commands like `/clear`, `/compact`, `/model` are **client-side TUI
+features** — the model can't run them and hooks can't fire them, so sending
+`/clear` from the mobile app just arrives as plain text. remote-tabs sessions are
+started inside a keystroke-injectable container with a background **inbox**
+watcher, so appending a line to the inbox **types it into the real TUI** and the
+built-in actually fires.
+
+- From your phone, just tell the session to run **`bridge-send /clear`** — or the
+  short alias **`bg.s /clear`** (easier to type on mobile) — a tiny helper that
+  queues the line into the inbox so the bridge types it into the TUI.
+  The model can't `/clear` itself, but `bridge-send` makes the bridge inject it.
+  Works for `bridge-send /compact`, `bridge-send !git status`,
+  `bridge-send "a plain prompt"` too; `/`/`!` lines get an ESC first to clear any
+  open modal. (Under the hood: `bridge-send` appends to the inbox at
+  `$CLAUDE_BRIDGE_INBOX`, printed on start as `inbox: …`; any external writer —
+  SSH, a synced file — works the same way.)
+- **Linux / WSL / macOS:** works out of the box (`tmux send-keys`).
+- **Windows:** needs `pywinpty`. Without it the session still starts but injection
+  is disabled (a note is printed). Enable it once — no system Python changes:
+  ```
+  powershell -File plugins/remote-tabs/scripts/setup-bridge.ps1
+  ```
+  (creates a managed venv at `%LOCALAPPDATA%\claude-remote-tabs\bridge-venv`; or
+  set `REMOTE_TABS_PYTHON` to any python that has pywinpty.)
 
 ### Closing a session
 
@@ -101,8 +128,8 @@ When you open a session in a folder Claude Code hasn't opened before, the new ba
 ## Requirements
 
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) CLI (`claude` on your `PATH`)
-- **Windows:** PowerShell 5.1 or 7+, plus Git Bash (bundled with Git for Windows — the plugin's entry point runs through the Bash tool)
-- **Linux / WSL / macOS:** `tmux`
+- **Windows:** PowerShell 5.1 or 7+, plus Git Bash (bundled with Git for Windows — the plugin's entry point runs through the Bash tool). *Optional, for the keystroke bridge:* Python 3 + `pywinpty` (one-time `scripts/setup-bridge.ps1`).
+- **Linux / WSL / macOS:** `tmux` (the keystroke bridge works out of the box via `tmux send-keys`)
 
 ## Note: these sessions are not saved locally
 
@@ -118,9 +145,10 @@ A remote-control session opened this way is **not** persisted to local storage �
 
 ## How it works
 
-`bin/open-remote-tab` and `bin/close-remote-tab` are single POSIX entry points exposed on the Bash tool's `PATH`. Each detects the OS via `uname`:
+`bin/open-remote-tab`, `bin/close-remote-tab`, and `bin/bridge-send` are single POSIX entry points exposed on the Bash tool's `PATH`. Each detects the OS via `uname` (except `bridge-send`, which is OS-agnostic):
 
-- **open — Windows** (Git Bash) → hands off to `scripts/open-remote-tab.ps1`, which launches the minimized PowerShell window running `claude --remote-control`. **Linux / macOS** → creates the detached `tmux` session running the same.
+- **open — Windows** (Git Bash) → hands off to `scripts/open-remote-tab.ps1`. With `pywinpty` it launches `scripts/pty_host.py`, which owns a ConPTY around `claude --remote-control` and injects inbox lines (keystroke bridge); without it, it falls back to the original minimized PowerShell window (no injection). **Linux / macOS** → creates the detached `tmux` session and starts `scripts/bridge.sh` to inject inbox lines via `tmux send-keys`.
+- **bridge-send** (alias **bg.s**) → appends its argument as one line to `$CLAUDE_BRIDGE_INBOX` (the session's inbox), so the bridge types it into the TUI. This is how `/clear` & co. are fired from a session.
 - **close — Windows** → `scripts/close-remote-tab.ps1` walks up the process tree to the current `claude.exe`/`node.exe` and terminates it (the launcher window then closes on its own). **Linux / macOS** → kills the current `tmux` session, or walks up to the current `claude`/`node` process when not in `tmux`.
 
 ## License

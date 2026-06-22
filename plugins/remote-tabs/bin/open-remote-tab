@@ -36,7 +36,15 @@ case "$(uname -s)" in
     fi
     name="claude-remote-$proj-$uid"
     claude_bin="$(command -v claude || echo "$HOME/.local/bin/claude")"
-    tmux new-session -d -s "$name" -c "$root" "$claude_bin --remote-control"
-    echo "remote session started (tmux: $name)"
+    inbox="${TMPDIR:-/tmp}/$name.inbox"
+    : > "$inbox"
+    # -e exports CLAUDE_BRIDGE_INBOX into the session so the model can find its own
+    # inbox (e.g. `echo /clear >> "$CLAUDE_BRIDGE_INBOX"`). tmux send-keys then injects.
+    tmux new-session -d -s "$name" -e "CLAUDE_BRIDGE_INBOX=$inbox" -c "$root" "$claude_bin --remote-control"
+    # Start the keystroke bridge watcher in the background (exits when session ends).
+    bindir="$(cd "$(dirname "$0")" && pwd)"
+    nohup sh "$bindir/../scripts/bridge.sh" "$name" "$inbox" >/dev/null 2>&1 &
+    echo "remote session started (tmux: $name) with keystroke bridge"
+    echo "inbox: $inbox   (e.g. echo /clear >> \"$inbox\")"
     ;;
 esac

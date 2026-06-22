@@ -1,0 +1,40 @@
+#!/bin/sh
+# Queue a line into the CURRENT session's keystroke-bridge inbox, so the bridge
+# types it into the real TUI — the way to fire built-ins like /clear that the
+# model and hooks cannot. Single POSIX entry point on the Bash tool's PATH.
+#
+# Run it from inside a bridged session: open-remote-tab exports the inbox path as
+# $CLAUDE_BRIDGE_INBOX, and this just appends your line to it.
+#
+# Usage: bridge-send <line...>
+#   bridge-send /clear            # built-in command (the whole point)
+#   bridge-send /compact
+#   bridge-send !git status       # bash mode
+#   bridge-send "fix the bug"     # a plain prompt, typed into the TUI
+set -e
+
+if [ "$#" -eq 0 ]; then
+  echo "usage: bridge-send <line...>   (e.g. bridge-send /clear)" >&2
+  exit 2
+fi
+
+inbox="${CLAUDE_BRIDGE_INBOX:-}"
+if [ -z "$inbox" ]; then
+  echo "bridge-send: not in a keystroke-bridge session (CLAUDE_BRIDGE_INBOX is unset)." >&2
+  echo "             start the session with open-remote-tab so the bridge is running." >&2
+  exit 1
+fi
+
+# On Windows the env var is a native path (C:\...\file.inbox); normalize for sh.
+if command -v cygpath >/dev/null 2>&1; then
+  inbox="$(cygpath -u "$inbox")"
+fi
+
+if [ ! -d "$(dirname "$inbox")" ]; then
+  echo "bridge-send: inbox directory missing ($inbox) — is the bridge running?" >&2
+  exit 1
+fi
+
+line="$*"
+printf '%s\n' "$line" >> "$inbox"   # one newline-terminated (completed) line
+echo "queued: $line"
