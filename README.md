@@ -8,6 +8,8 @@
 
 A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens — and closes — background **Remote Control** sessions by voice or text, with no stolen window focus, so you can drive them from the Claude mobile app / claude.ai/code. Just tell your agent *"open a new session"* and a fresh, independent session spins up in the background (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) and shows up in your mobile/web session list, ready to drive from your phone.
 
+Each session also runs inside a **keystroke bridge**, so you can finally fire the built-in commands the mobile app can't — send **`/clear`**, `/compact`, or `/model` from your phone and they actually run in the real TUI (the model and hooks can't trigger those; only real keystrokes can). See [Keystroke bridge](#keystroke-bridge-trigger-clear--co-from-your-phone).
+
 ## Install (Claude Code plugin)
 
 Add the marketplace first — on its own line. Don't paste an install line in the same message (it gets swallowed into this one as a bad repo argument and the clone fails).
@@ -45,6 +47,7 @@ No per-project setup — nothing is copied into your repo.
 - Walk away from your desktop and keep long-running work (builds, refactors) going in the background, fully driven from the mobile app.
 - End the session you're currently in with plain language — just say *"close this session."*
 - Launch several tasks as independent sessions and switch between them like tabs on your phone.
+- **Fire built-ins from your phone:** send `/clear` to actually wipe the context, `/compact` to compact, `/model` to switch models — commands that normally arrive as inert plain text in the mobile app now run for real via the keystroke bridge.
 
 **`selection-is-all-you-need`**
 
