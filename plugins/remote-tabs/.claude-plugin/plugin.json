@@ -1,6 +1,6 @@
 {
   "name": "remote-tabs",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Open background Claude Code remote-control sessions by voice/text — drive them from the Claude mobile app, with a keystroke bridge that fires built-ins like /clear.",
   "author": { "name": "Zun-RZ" },
   "homepage": "https://github.com/Zun-RZ/claude-remote-coding",
