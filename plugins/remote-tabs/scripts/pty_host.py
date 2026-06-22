@@ -79,45 +79,47 @@ def pump_output(proc):
             sys.stdout.flush()
 
 
-# 화살표 등 특수키(getwch 프리픽스 \x00/\xe0 다음 코드) → ANSI 시퀀스
-_SPECIAL_KEYS = {
-    "H": "\x1b[A", "P": "\x1b[B", "M": "\x1b[C", "K": "\x1b[D",   # ↑ ↓ → ←
-    "G": "\x1b[H", "O": "\x1b[F", "S": "\x1b[3~", "R": "\x1b[2~",  # Home End Del Ins
-    "I": "\x1b[5~", "Q": "\x1b[6~",                                 # PgUp PgDn
-}
-
-
 def forward_console_input(proc):
     """이 콘솔 창에 '포커스가 있을 때 친' 키만 PTY로 전달한다.
     콘솔 입력 버퍼는 그 창이 키보드 포커스를 가질 때만 채워지므로, 창이 비활성이면
-    getwch가 블록될 뿐 전역 입력을 가로채지 않는다 (SendInput/전역 키보드 훅 미사용 —
-    엉뚱한 창에 입력될 위험 없음). 콘솔이 아니면(백그라운드/리다이렉트) 아무것도 안 한다."""
+    읽기가 블록될 뿐 전역 입력을 가로채지 않는다 (SendInput/전역 키보드 훅 미사용 —
+    엉뚱한 창에 입력될 위험 없음). 콘솔이 아니면(백그라운드/리다이렉트) 아무것도 안 한다.
+
+    콘솔을 raw + VT 입력 모드로 둔다:
+    - ENABLE_PROCESSED_INPUT 끔 → Ctrl-C가 신호로 호스트를 죽이지 않고 \x03 바이트로 와
+      그대로 claude에 전달된다(=claude 작업만 인터럽트). ESC도 \x1b로 그대로 전달.
+    - ENABLE_VIRTUAL_TERMINAL_INPUT 켬 → 화살표/Home/End 등이 VT 시퀀스로 들어와 전달.
+    - LINE/ECHO 끔 → 줄 단위·에코 없이 키 단위로(에코는 claude가 한다)."""
+    if os.name != "nt":
+        return
+    import ctypes
     try:
         import msvcrt
-    except ImportError:
-        return
-    try:
-        if not sys.stdin.isatty():
-            return
+        handle = msvcrt.get_osfhandle(sys.stdin.fileno())
     except Exception:
         return
-    while proc.isalive():
-        try:
-            ch = msvcrt.getwch()  # 에코·라인버퍼 없는 콘솔 단일 키 읽기 (블로킹)
-        except Exception:
-            break
-        if ch in ("\x00", "\xe0"):        # 특수키 프리픽스 → 다음 코드로 시퀀스 결정
-            try:
-                code = msvcrt.getwch()
-            except Exception:
+    k32 = ctypes.windll.kernel32
+    old = ctypes.c_uint()
+    if not k32.GetConsoleMode(handle, ctypes.byref(old)):
+        return  # 콘솔이 아님 (파이프/리다이렉트) → no-op
+    ENABLE_PROCESSED_INPUT = 0x0001
+    ENABLE_LINE_INPUT = 0x0002
+    ENABLE_ECHO_INPUT = 0x0004
+    ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200
+    new = (old.value & ~(ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) \
+        | ENABLE_VIRTUAL_TERMINAL_INPUT
+    k32.SetConsoleMode(handle, new)
+    fd = sys.stdin.fileno()
+    try:
+        while proc.isalive():
+            data = os.read(fd, 64)  # 포커스된 콘솔의 키 바이트(VT 시퀀스 포함). 비활성이면 블록.
+            if not data:
                 break
-            seq = _SPECIAL_KEYS.get(code)
-            if seq:
-                proc.write(seq)
-            continue
-        if ch == "\x08":                  # Backspace → DEL(0x7f)
-            ch = "\x7f"
-        proc.write(ch)
+            proc.write(data.decode("utf-8", "replace"))
+    except Exception:
+        pass
+    finally:
+        k32.SetConsoleMode(handle, old.value)
 
 
 def main(argv):
