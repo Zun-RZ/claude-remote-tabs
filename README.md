@@ -6,7 +6,7 @@
   <img src="docs/images/do-you-guys-not-have-phones.png" alt="DO YOU GUYS NOT HAVE PHONES?" width="100%">
 </p>
 
-A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens — and closes — background **Remote Control** sessions by voice or text, with no stolen window focus, so you can drive them from the Claude mobile app / claude.ai/code. Just tell your agent *"open a new session"* and a fresh, independent session spins up in the background (a minimized terminal on Windows, or a detached `tmux` session on Linux/WSL) and shows up in your mobile/web session list, ready to drive from your phone.
+A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens — and closes — background **Remote Control** sessions by voice or text, with no stolen window focus, so you can drive them from the Claude mobile app / claude.ai/code. Just tell your agent *"open a new session"* and a fresh, independent session spins up in the background (windowless on Windows, or a detached `tmux` session on Linux/WSL) and shows up in your mobile/web session list, ready to drive from your phone.
 
 Each session also runs inside a **keystroke bridge**, so you can finally fire the built-in commands the mobile app can't — send **`/clear`**, `/compact`, or `/model` from your phone and they actually run in the real TUI (the model and hooks can't trigger those; only real keystrokes can). See [Keystroke bridge](#keystroke-bridge-trigger-clear--co-from-your-phone).
 
@@ -43,7 +43,7 @@ No per-project setup — nothing is copied into your repo.
 
 **`remote-tabs`**
 
-- From your phone, say *"open a new background session for this project"* and a detached session spins up (minimized terminal on Windows, `tmux` on Linux/WSL) that you pick up on claude.ai/code.
+- From your phone, say *"open a new background session for this project"* and a detached session spins up (windowless on Windows, `tmux` on Linux/WSL) that you pick up on claude.ai/code.
 - Walk away from your desktop and keep long-running work (builds, refactors) going in the background, fully driven from the mobile app.
 - End the session you're currently in with plain language — just say *"close this session."*
 - Launch several tasks as independent sessions and switch between them like tabs on your phone.
@@ -69,10 +69,10 @@ Just ask your agent, in any project:
 
 Claude picks the `open-remote-tab` skill automatically and starts a new background remote-control session. Each invocation starts a **new, independent** session, so multiple can run side by side for the same project.
 
-- **Windows:** a **minimized** window (visible in the taskbar so you can close it manually).
+- **Windows:** **no window** — the `pywinpty` bridge runs headless (the no-`pywinpty` fallback uses a minimized terminal). Close it with `close-remote-tab`, not by hand.
 - **Linux / WSL / macOS:** a **detached `tmux`** session named `claude-remote-<project>-<sec>-<pid>`.
 
-The shell exits by itself when `claude` ends.
+The session exits by itself when `claude` ends.
 
 ### Keystroke bridge: trigger `/clear` & co. from your phone
 
@@ -116,14 +116,9 @@ Claude picks the `close-remote-tab` skill, asks for **one** confirmation (termin
 
 > Reliably ends sessions started with `open-remote-tab`; a plain `claude` in a terminal tab may restart after closing.
 
-~~## Optional: no permission prompts (recommended once per project)~~
+## Permissions: approve once at the top level
 
-~~By default, the first `open-remote-tab` call in a project triggers a one-time permission prompt. To run without prompts (useful when driving from mobile), ask your agent once — ideally from the desktop:~~
-
-> ~~set up remote tabs for this project~~
-
-~~That runs the `setup-remote-tabs` skill, which merges `Bash(open-remote-tab*)` into the project's `.claude/settings.json` allow-list and sets `permissions.defaultMode` to `auto` (only if not already set). It's idempotent and never overrides existing values.~~
-_Unnecessary_
+`open-remote-tab` runs through the Bash tool, so its first use prompts for permission. The simplest and safest approach is to **approve it once at a top-level folder** — you stay in control of what's allowed. There's intentionally no setup step that wires `permissions.defaultMode = auto` for you; whether to turn `auto` mode on is left to you.
 
 ## First run in a new folder: trust it
 
@@ -146,7 +141,6 @@ A remote-control session opened this way is **not** persisted to local storage �
 | `open-remote-tab` | Start one background remote-control session for the current project |
 | `close-remote-tab` | End the current session (after one confirmation, or instantly with the `#@stop#@` keyword) — keeps zombie sessions from piling up |
 | `send-key` | Inside a session, fire a TUI command (`/clear`, `/compact`, `!`bash, or `bg.s …`) by injecting it through the keystroke bridge |
-| `setup-remote-tabs` | One-time opt-in: wire `.claude/settings.json` so sessions run without prompts |
 
 ## How it works
 
@@ -154,7 +148,7 @@ A remote-control session opened this way is **not** persisted to local storage �
 
 - **open — Windows** (Git Bash) → hands off to `scripts/open-remote-tab.ps1`. With `pywinpty` it launches `scripts/pty_host.py`, which owns a ConPTY around `claude --remote-control` and injects inbox lines (keystroke bridge); without it, it falls back to the original minimized PowerShell window (no injection). **Linux / macOS** → creates the detached `tmux` session and starts `scripts/bridge.sh` to inject inbox lines via `tmux send-keys`.
 - **bridge-send** (alias **bg.s**) → appends its argument as one line to `$CLAUDE_BRIDGE_INBOX` (the session's inbox), so the bridge types it into the TUI. This is how `/clear` & co. are fired from a session.
-- **close — Windows** → `scripts/close-remote-tab.ps1` walks up the process tree to the current `claude.exe`/`node.exe` and terminates it (the launcher window then closes on its own). **Linux / macOS** → kills the current `tmux` session, or walks up to the current `claude`/`node` process when not in `tmux`.
+- **close — Windows** → `scripts/close-remote-tab.ps1` walks up the process tree to the current `claude.exe`/`node.exe` and terminates it (the windowless bridge host — or the minimized fallback window — then exits on its own). **Linux / macOS** → kills the current `tmux` session, or walks up to the current `claude`/`node` process when not in `tmux`.
 
 ## License
 

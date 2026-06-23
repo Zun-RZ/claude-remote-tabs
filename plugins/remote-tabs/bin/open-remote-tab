@@ -4,8 +4,9 @@
 # so the Bash tool puts it on PATH (Git Bash on Windows too).
 #
 # Detects the OS via `uname`:
-#   - Windows (MINGW/MSYS/CYGWIN): hands off to scripts/open-remote-tab.ps1,
-#     which launches a minimized PowerShell window running `claude --remote-control`.
+#   - Windows (MINGW/MSYS/CYGWIN): hands off to scripts/open-remote-tab.ps1, which
+#     starts the bridge with NO window (headless ConPTY host); only the no-pywinpty
+#     fallback uses a minimized terminal.
 #   - Linux / macOS: creates a detached tmux session running the same.
 #
 # NOTE: a `--remote-control` session is NOT saved locally — the conversation
@@ -27,7 +28,21 @@ case "$(uname -s)" in
       exit 1
     fi
     ps1win="$(cygpath -w "$ps1")"
-    powershell.exe -ExecutionPolicy Bypass -File "$ps1win"
+    # Run the .ps1 with NO console window. A console-less parent (the Bash tool's
+    # shell) launching a console app (powershell) makes the default terminal
+    # (Windows Terminal) pop a window to host it — a black flash that lingers the
+    # ~0.4s until the .ps1 returns. -WindowStyle Hidden does NOT help (WT owns the
+    # window). pythonw is a GUI-subsystem interpreter (no console of its own), so
+    # going through it to launch powershell with CREATE_NO_WINDOW (0x08000000)
+    # attaches no console at all — no window ever appears. powershell's stdout is
+    # piped back so the status lines still show. pythonw missing (rare) -> direct
+    # call (brief flash, old behavior).
+    pyw="$(command -v pythonw 2>/dev/null)"
+    if [ -n "$pyw" ]; then
+      "$pyw" -c 'import subprocess,sys; r=subprocess.run(["powershell.exe","-ExecutionPolicy","Bypass","-File",sys.argv[1]],creationflags=0x08000000,capture_output=True,text=True); sys.stdout.write(r.stdout); sys.stderr.write(r.stderr); sys.exit(r.returncode)' "$ps1win"
+    else
+      powershell.exe -ExecutionPolicy Bypass -File "$ps1win"
+    fi
     ;;
   *)
     if ! command -v tmux >/dev/null 2>&1; then
