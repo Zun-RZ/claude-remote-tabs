@@ -5,10 +5,14 @@
 # (Start-Process 미니마이즈드 런처는 PTY를 안 쥐어 주입 불가 → 이 호스트가 대체.)
 # tui-keystroke-bridge(Zun-RZ) 의 windows/pty_host.py 를 벤더링.
 #
-# 사용: python pty_host.py <inbox-file> [--] [command...]
+# 사용: python pty_host.py <inbox-file> [--url-out <file>] [--] [command...]
 #   기본 command = claude. spawn되는 자식엔 CLAUDE_BRIDGE_INBOX 환경변수가 설정돼
 #   세션 안의 모델이 `echo /clear >> "$CLAUDE_BRIDGE_INBOX"` 로 자기 inbox를 찾을 수 있다.
+#   --url-out <file>: PTY 출력에서 처음 보이는 claude.ai/code/session_… URL을 그 파일에
+#   한 번만 기록한다. no-window 모드는 PTY 출력이 DEVNULL로 버려져 콘솔 화면버퍼가 없으니,
+#   이 옵션이 외부(런처)가 세션 URL을 잡는 유일한 통로다. 미지정이면 동작·출력 그대로.
 import os
+import re
 import sys
 import threading
 import time
@@ -18,6 +22,10 @@ from winpty import Backend, PtyProcess
 POLL_INTERVAL = 1.0  # Windows엔 inotify가 없어 단순 폴링
 ESC_SETTLE = 0.4     # 슬래시/배시 명령 주입 전 ESC를 보내고 모달이 닫힐 시간을 준다
 PASTE_SETTLE = 0.1   # bracketed paste 종료 후 제출 CR을 보내기 전 짧은 대기
+# claude --remote-control 시작 배너에 한 줄로 찍히는 웹 세션 URL. 출력이 청크로 쪼개져
+# 와도 잡히게 pump_output이 누적 tail 버퍼에서 매칭한다. URL은 ANSI가 안 끼는 연속
+# 문자열이고 80컬럼 안에 들어가므로(≈60자) 줄바꿈으로 쪼개질 일은 없다.
+SESSION_URL_RE = re.compile(r"https://claude\.ai/code/session_[A-Za-z0-9]+")
 
 # PTY로의 write는 원래 두 곳(inbox 주입 / 로컬 콘솔 입력 전달)에서 서로 다른 스레드가
 # 한다. 이 락으로 직렬화해, 주입 명령의 ESC+명령 2단계 사이에 로컬 키가 끼어드는 오염을
@@ -94,8 +102,11 @@ def inject_new(proc, inbox, state):
     write_offset(state, len(lines))
 
 
-def pump_output(proc):
-    """PTY 출력을 stdout으로 흘려보낸다 (백그라운드면 로그/버림으로 리다이렉트)."""
+def pump_output(proc, url_out=None):
+    """PTY 출력을 stdout으로 흘려보낸다 (백그라운드면 로그/버림으로 리다이렉트).
+    url_out이 주어지면 출력에서 처음 만나는 세션 URL을 그 파일에 1회 기록한다."""
+    tail = ""  # URL이 read 청크 경계에서 잘려도 잡히게 최근 출력 일부를 누적
+    url_done = False
     while True:
         try:
             data = proc.read(4096)
@@ -104,6 +115,16 @@ def pump_output(proc):
         if data:
             sys.stdout.write(data)
             sys.stdout.flush()
+            if url_out and not url_done:
+                tail = (tail + data)[-4096:]
+                m = SESSION_URL_RE.search(tail)
+                if m:
+                    try:
+                        with open(url_out, "w", encoding="utf-8") as f:
+                            f.write(m.group(0))
+                        url_done = True
+                    except OSError:
+                        pass  # 못 써도 세션 진행엔 영향 없음(런처가 타임아웃 처리)
 
 
 def enable_console_raw():
@@ -175,6 +196,10 @@ def main(argv):
         return 2
     inbox = os.path.expanduser(argv[1])
     rest = argv[2:]
+    url_out = None
+    if rest and rest[0] == "--url-out":
+        url_out = os.path.expanduser(rest[1]) if len(rest) > 1 else None
+        rest = rest[2:]
     if rest and rest[0] == "--":
         rest = rest[1:]
     command = rest or ["claude"]
@@ -196,7 +221,7 @@ def main(argv):
     proc = PtyProcess.spawn(command, env=env, backend=Backend.ConPTY)
     print(f"[pty_host] spawned {command!r}  inbox={inbox}", file=sys.stderr)
 
-    threading.Thread(target=pump_output, args=(proc,), daemon=True).start()
+    threading.Thread(target=pump_output, args=(proc, url_out), daemon=True).start()
 
     # ── 로컬 콘솔 입력 포워딩 (REMOTE_TABS_WINDOW로 토글) ─────────────────────────
     # 포커스된 로컬 창에 친 키를 PTY로 전달한다. 런처가 pty_host를 어떻게 띄웠는지로
