@@ -198,19 +198,15 @@ def main(argv):
 
     threading.Thread(target=pump_output, args=(proc,), daemon=True).start()
 
-    # ── 로컬 콘솔 입력 포워딩: 현재 비활성(코드는 보존) ──────────────────────────
-    # 포커스된 로컬 창에 친 키를 PTY로 전달하는 기능. 지금은 비활성이다 — 아래 두 줄을
-    # 주석 처리하고 console=None으로 고정한다. '세션을 처음 켤 때 콘솔 창이 한 번 떠
-    # 화면을 가리는' 문제를 피해 런처가 pty_host를 창 없는 콘솔(python.exe +
-    # CREATE_NO_WINDOW)로 띄우는데, 창이 없으면 이 포워딩도 의미가 없기 때문이다
-    # (검은 창 자체보다 그 가림이 문제였다). 기능 코드(enable_console_raw /
-    # restore_console / forward_console_input)는 미래에 '포커스 없는 최소화 창 + 로컬
-    # 편집' 옵션으로 되살릴 수 있어 온전히 보존한다. 부활하려면 아래 두 줄의 주석을
-    # 풀고 런처가 창 있는 콘솔로 띄우게 하면 된다.
-    #   console = enable_console_raw()
-    #   if console:
-    #       threading.Thread(target=forward_console_input, args=(proc,), daemon=True).start()
-    console = None
+    # ── 로컬 콘솔 입력 포워딩 (REMOTE_TABS_WINDOW로 토글) ─────────────────────────
+    # 포커스된 로컬 창에 친 키를 PTY로 전달한다. 런처가 pty_host를 어떻게 띄웠는지로
+    # self-gate한다: 기본(무창)은 stdin=DEVNULL이라 enable_console_raw가 None을 반환해
+    # 자동 no-op이고, REMOTE_TABS_WINDOW=1이면 런처가 최소화된 '보이는' 콘솔로 띄워
+    # stdin이 진짜 콘솔이 되어 포워딩이 활성화된다(한글 등 로컬 타이핑). 이 분기는
+    # 콘솔 유무 한 곳만 보면 되도록 pty_host에서 환경변수를 직접 읽지 않는다.
+    console = enable_console_raw()
+    if console:
+        threading.Thread(target=forward_console_input, args=(proc,), daemon=True).start()
 
     try:
         while proc.isalive():
