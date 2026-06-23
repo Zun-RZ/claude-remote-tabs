@@ -8,7 +8,7 @@
 
 A [Claude Code](https://docs.claude.com/en/docs/claude-code) plugin that opens — and closes — background **Remote Control** sessions by voice or text, with no stolen window focus, so you can drive them from the Claude mobile app / claude.ai/code. Just tell your agent *"open a new session"* and a fresh, independent session spins up in the background (windowless on Windows, or a detached `tmux` session on Linux/WSL) and shows up in your mobile/web session list, ready to drive from your phone.
 
-Each session also runs inside a **keystroke bridge**, so you can finally fire the built-in commands the mobile app can't — send **`/clear`**, `/compact`, or `/model` from your phone and they actually run in the real TUI (the model and hooks can't trigger those; only real keystrokes can). See [Keystroke bridge](#keystroke-bridge-trigger-clear--co-from-your-phone).
+Each session also runs inside a **keystroke bridge**, so you can finally fire the built-in commands the mobile app can't — send **`s.k /clear`**, `s.k /compact`, or `s.k /model haiku` from your phone and they actually run in the real TUI (the model and hooks can't trigger those; only real keystrokes can). See [Keystroke bridge](#keystroke-bridge-trigger-clear--co-from-your-phone).
 
 ## Install (Claude Code plugin)
 
@@ -47,7 +47,7 @@ No per-project setup — nothing is copied into your repo.
 - Walk away from your desktop and keep long-running work (builds, refactors) going in the background, fully driven from the mobile app.
 - End the session you're currently in with plain language — just say *"close this session."*
 - Launch several tasks as independent sessions and switch between them like tabs on your phone.
-- **Fire built-ins from your phone:** send `/clear` to actually wipe the context, `/compact` to compact, `/model` to switch models — commands that normally arrive as inert plain text in the mobile app now run for real via the keystroke bridge.
+- **Fire built-ins from your phone:** send `s.k /clear` to actually wipe the context, `s.k /compact` to compact, `s.k /model haiku` to switch models — commands that normally arrive as inert plain text in the mobile app now run for real via the keystroke bridge.
 
 **`selection-is-all-you-need`**
 
@@ -69,7 +69,7 @@ Just ask your agent, in any project:
 
 Claude picks the `open-remote-tab` skill automatically and starts a new background remote-control session. Each invocation starts a **new, independent** session, so multiple can run side by side for the same project.
 
-- **Windows:** **no window** — the `pywinpty` bridge runs headless (the no-`pywinpty` fallback uses a minimized terminal). Close it with `close-remote-tab`, not by hand.
+- **Windows:** **no window** by default — the `pywinpty` bridge runs headless. Set **`REMOTE_TABS_WINDOW=1`** to open a console window you can type into locally (see [Window mode](#window-mode-type-locally-remote_tabs_window)). The no-`pywinpty` fallback uses a separate terminal. Close sessions with `close-remote-tab`, not by hand.
 - **Linux / WSL / macOS:** a **detached `tmux`** session named `claude-remote-<project>-<sec>-<pid>`.
 
 The session exits by itself when `claude` ends.
@@ -83,16 +83,24 @@ started inside a keystroke-injectable container with a background **inbox**
 watcher, so appending a line to the inbox **types it into the real TUI** and the
 built-in actually fires.
 
-- From your phone, just send **`/clear`** (or `s.k /clear`) to the session — the
-  bundled **`send-key`** skill recognizes it and queues it into the inbox so the
-  bridge types it into the TUI. (`send-key` runs the `send-key` / `s.k` helper,
-  a one-liner that appends the line to the inbox.)
-  The model can't `/clear` itself, but `send-key` makes the bridge inject it.
-  Works for `send-key /compact`, `send-key !git status`,
-  `send-key "a plain prompt"` too; `/`/`!` lines get an ESC first to clear any
-  open modal. (Under the hood: `send-key` appends to the inbox at
+- From your phone, send **`s.k /clear`** (or the long form `send-key /clear`) to
+  the session — the bundled **`send-key`** skill recognizes the `s.k` / `send-key`
+  prefix and queues the rest into the inbox so the bridge types it into the TUI.
+  `s.k` is the short, mobile-friendly alias for `send-key`. The model can't run
+  `/clear` itself; this makes the bridge inject it. Works for `s.k /compact`,
+  `s.k !git status`, `s.k "a plain prompt"` too; `/`/`!` lines get an ESC first to
+  clear any open modal. (Under the hood: `send-key` appends to the inbox at
   `$CLAUDE_BRIDGE_INBOX`, printed on start as `inbox: …`; any external writer —
   SSH, a synced file — works the same way.)
+  - **The explicit `s.k` / `send-key` prefix is required** — a bare `/clear` typed
+    as a normal message is not treated as a command (that proved unreliable to
+    catch).
+  - **One-shot commands only.** The bridge injects a single line, so `send-key`
+    refuses built-ins that then wait for *more* input — a picker or menu the remote
+    session can't drive (e.g. bare `/model`, `/config`, `/login`, `/resume`,
+    `/agents`). Put the full choice on one line instead: `s.k /model haiku`,
+    `s.k /config theme=dark`, `s.k /plugin marketplace update`. Plain prompts,
+    `!`bash, and any command that completes on its line go through.
 - **Linux / WSL / macOS:** works out of the box (`tmux send-keys`).
 - **Windows:** needs `pywinpty`. Without it the session still starts but injection
   is disabled (a note is printed). Enable it once — no system Python changes:
@@ -101,6 +109,35 @@ built-in actually fires.
   ```
   (creates a managed venv at `%LOCALAPPDATA%\claude-remote-tabs\bridge-venv`; or
   set `REMOTE_TABS_PYTHON` to any python that has pywinpty.)
+
+### Window mode (type locally): `REMOTE_TABS_WINDOW`
+
+By default a session runs **headless (no window)** — you drive it from your phone.
+Set the **`REMOTE_TABS_WINDOW`** environment variable to instead open a **console
+window** for the session, so you can also type into it directly on the PC (arrow
+keys, Ctrl-C, and **Korean / IME** input all work). Opt-in, Windows-only.
+
+- **On:** `1`, `true`, `yes`, `on` (any value that isn't an off-word).
+- **Off (default):** unset, empty, or `0` / `false` / `no` / `off`.
+
+Set it persistently — new sessions pick it up after you restart Claude Code. From
+a session prompt, use the `!` prefix:
+
+```
+! setx REMOTE_TABS_WINDOW 1      # on   (setx REMOTE_TABS_WINDOW 0 to turn off)
+```
+
+…or inline for a single tab (takes effect immediately, no restart):
+
+```
+REMOTE_TABS_WINDOW=1 open-remote-tab
+```
+
+> **Limitation — the window opens *normally*, not minimized.** The launcher can't
+> reliably open the console minimized across terminal hosts: **Windows Terminal**
+> (the Windows 11 default) ignores the minimized request and shows a normal window
+> that takes focus when it opens. Expect a normal window — minimize it by hand if
+> you want. The keystroke bridge (`/clear` & co.) works identically in either mode.
 
 ### Closing a session
 
