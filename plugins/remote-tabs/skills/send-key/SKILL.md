@@ -27,6 +27,9 @@ types each appended line into the TUI, so you trigger the command by writing to 
    Report the `queued: …` line back.
 3. If `send-key` prints `not in a keystroke-bridge session`, this session wasn't
    started with the bridge — tell the user to open it with `open-remote-tab` and stop.
+4. If `send-key` exits with an error that the command "opens an interactive UI" or
+   is a "bare picker", that built-in needs more input than one line — relay the
+   message, and for a bare picker suggest the one-line form (e.g. `/model haiku`).
 
 Do **not** try to emulate `/clear` (or any built-in) yourself — only the injected
 keystroke fires it. Just queue the line and let the bridge do the typing.

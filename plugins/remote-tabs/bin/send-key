@@ -36,5 +36,35 @@ if [ ! -d "$(dirname "$inbox")" ]; then
 fi
 
 line="$*"
+
+# Guard: refuse slash built-ins that would strand this one-shot bridge. We inject a
+# single line, so a command that then waits for more keyboard input (a picker/menu/
+# dialog) hangs the remote session. Everything else passes — plain prompts, !bash,
+# and slash commands that complete on the line (incl. with an arg, e.g.
+# `/model haiku`, `/plugin marketplace update`). Lists are conservative and
+# allow-by-default: an unlisted command is injected.
+case "$line" in
+  /*)
+    # Strands regardless of args (opens a UI that needs navigation).
+    always=" /login /logout /permissions /memory /agents /diff /doctor /rewind /ide /terminal-setup /scroll-speed /keybindings /schedule /routines /workflows /teleport /install-github-app /install-slack-app /setup-bedrock /setup-vertex /privacy-settings /statusline /remote-env "
+    # Interactive only when BARE — completes when given an argument on the line.
+    bare_picker=" /model /config /effort /advisor /mcp /plugin /theme /resume /review /color /copy "
+    set -f; set -- $line; set +f   # tokenize (glob-safe); $1=command, $#=token count
+    cmd=$1
+    case "$always" in
+      *" $cmd "*)
+        echo "send-key: '$cmd' opens an interactive UI that needs more input — the keystroke bridge can't drive it. Run it locally instead." >&2
+        exit 3 ;;
+    esac
+    if [ "$#" -eq 1 ]; then
+      case "$bare_picker" in
+        *" $cmd "*)
+          echo "send-key: bare '$cmd' opens a picker the bridge can't drive. Put the full choice on one line (e.g. '$cmd <value>')." >&2
+          exit 3 ;;
+      esac
+    fi
+    ;;
+esac
+
 printf '%s\n' "$line" >> "$inbox"   # one newline-terminated (completed) line
 echo "queued: $line"
