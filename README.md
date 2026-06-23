@@ -136,6 +136,10 @@ a session prompt, use the `!` prefix:
 REMOTE_TABS_WINDOW=1 open-remote-tab
 ```
 
+…or, from your phone, just **say it** — e.g. *"open the session in a window"* /
+*"창 열어서 세션 열어줘"*. The `open-remote-tab` skill recognizes the request and
+launches that one session with `REMOTE_TABS_WINDOW=1`.
+
 > **Limitation — the window opens *normally*, not minimized.** The launcher can't
 > reliably open the console minimized across terminal hosts: **Windows Terminal**
 > (the Windows 11 default) ignores the minimized request and shows a normal window
