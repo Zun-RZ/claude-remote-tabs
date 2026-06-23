@@ -97,10 +97,13 @@ built-in actually fires.
     catch).
   - **One-shot commands only.** The bridge injects a single line, so `send-key`
     refuses built-ins that then wait for *more* input — a picker or menu the remote
-    session can't drive (e.g. bare `/model`, `/config`, `/login`, `/resume`,
-    `/agents`). Put the full choice on one line instead: `s.k /model haiku`,
-    `s.k /config theme=dark`, `s.k /plugin marketplace update`. Plain prompts,
-    `!`bash, and any command that completes on its line go through.
+    session can't drive. Some are always blocked (`/plugin`, `/resume`, `/review`,
+    `/copy`, `/login`, `/permissions`, `/agents`, `/diff`, … — interactive even
+    with arguments, e.g. `/plugin marketplace update` still opens an arrow-key UI),
+    and others only when bare (`/model`, `/config`, `/mcp`, `/theme`, … — fine once
+    you add the choice). Put the full choice on one line: `s.k /model haiku`,
+    `s.k /config theme=dark`. Plain prompts, `!`bash, and any command that completes
+    on its line go through.
 - **Linux / WSL / macOS:** works out of the box (`tmux send-keys`).
 - **Windows:** needs `pywinpty`. Without it the session still starts but injection
   is disabled (a note is printed). Enable it once — no system Python changes:

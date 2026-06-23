@@ -41,14 +41,16 @@ line="$*"
 # single line, so a command that then waits for more keyboard input (a picker/menu/
 # dialog) hangs the remote session. Everything else passes — plain prompts, !bash,
 # and slash commands that complete on the line (incl. with an arg, e.g.
-# `/model haiku`, `/plugin marketplace update`). Lists are conservative and
+# `/model haiku`, `/config theme=dark`). Lists are conservative and
 # allow-by-default: an unlisted command is injected.
 case "$line" in
   /*)
-    # Strands regardless of args (opens a UI that needs navigation).
-    always=" /login /logout /permissions /memory /agents /diff /doctor /rewind /ide /terminal-setup /scroll-speed /keybindings /schedule /routines /workflows /teleport /install-github-app /install-slack-app /setup-bedrock /setup-vertex /privacy-settings /statusline /remote-env "
+    # Strands regardless of args (opens a UI that needs navigation). /plugin, /resume,
+    # /review, /copy stay interactive even WITH a subcommand/arg (e.g. `/plugin
+    # marketplace update` still opens an arrow-key UI), so they live here, not below.
+    always=" /login /logout /permissions /memory /agents /diff /doctor /rewind /ide /terminal-setup /scroll-speed /keybindings /schedule /routines /workflows /teleport /install-github-app /install-slack-app /setup-bedrock /setup-vertex /privacy-settings /statusline /remote-env /plugin /resume /review /copy "
     # Interactive only when BARE — completes when given an argument on the line.
-    bare_picker=" /model /config /effort /advisor /mcp /plugin /theme /resume /review /color /copy "
+    bare_picker=" /model /config /effort /advisor /mcp /theme /color "
     set -f; set -- $line; set +f   # tokenize (glob-safe); $1=command, $#=token count
     cmd=$1
     case "$always" in
