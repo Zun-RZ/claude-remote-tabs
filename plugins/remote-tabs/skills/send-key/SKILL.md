@@ -1,11 +1,9 @@
 ---
 name: send-key
-description: Use INSIDE a remote-control session when the user's message IS a TUI
-  command for this session to run — a built-in slash command (/clear, /compact,
-  /model, /config), a bash-mode line (starting with !), or an explicit "bg.s …"
-  or "bridge-send …". The model cannot run /clear and friends itself; this injects
-  the command into the real TUI via the keystroke bridge so it actually fires.
-  Triggers on short messages that ARE such a command (e.g. "/clear", "bg.s /compact").
+description: Use INSIDE a remote-control session when the user's message starts
+  with "br.s …" or "bridge-send …" — inject the rest of the line as a TUI command
+  into this session via the keystroke bridge (the model and hooks cannot type it
+  themselves). Triggers on e.g. "br.s /compact", "bridge-send /clear".
 ---
 
 # Fire a TUI command via the keystroke bridge
@@ -18,9 +16,8 @@ types each appended line into the TUI, so you trigger the command by writing to 
 
 ## Steps
 
-1. Work out the command line from the user's message:
-   - `bg.s X` or `bridge-send X` → the command is `X`
-   - otherwise the whole message is the command (e.g. `/clear`, `!git status`)
+1. The message starts with the prefix; the command is the rest:
+   - `br.s X` or `bridge-send X` → the command is `X` (e.g. `/clear`, `!git status`)
 2. Run it via the Bash tool:
    ```
    bridge-send <command>

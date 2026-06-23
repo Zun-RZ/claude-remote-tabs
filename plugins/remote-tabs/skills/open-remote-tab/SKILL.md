@@ -31,10 +31,10 @@ built-in commands the model/hooks can't trigger — `/clear`, `/compact`,
 `/model`, plus `!`bash and plain prompts — actually fire.
 
 - Easiest from inside the session (e.g. driven from the phone): run
-  **`bridge-send /clear`** — or the short alias **`bg.s /clear`** (easier to type
+  **`bridge-send /clear`** — or the short alias **`br.s /clear`** (easier to type
   on mobile). It appends the line to the inbox so the bridge types it into the
   TUI — the model can't run `/clear` itself, but this makes the bridge inject it.
-  Also `bg.s /compact`, `bg.s !git status`, `bg.s "a plain prompt"`.
+  Also `br.s /compact`, `br.s !git status`, `br.s "a plain prompt"`.
 - Under the hood the inbox path is printed on start (`inbox: …`) and exported as
   `CLAUDE_BRIDGE_INBOX`; `bridge-send` just appends to it (equivalent to
   `echo /clear >> "$CLAUDE_BRIDGE_INBOX"`). Any external writer (SSH, synced file)
