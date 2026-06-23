@@ -61,24 +61,25 @@ if ($py -and (Test-Path $hostPy)) {
     # Keystroke-bridge mode: pty_host.py spawns `claude --remote-control` in a ConPTY
     # it owns and injects inbox lines. It also sets CLAUDE_BRIDGE_INBOX in the session.
     $pyExe = $py[0]; $pyPre = $py[1]
-    # REMOTE_TABS_WINDOW toggles visible-window mode. Treat unset/empty and
-    # 0/false/no/off (any case) as OFF — PowerShell counts the string "0" as
-    # truthy, so a bare `if ($env:...)` would wrongly enable it on =0.
+    # REMOTE_TABS_WINDOW picks the mode: unset/empty and 0/false/no/off (any case)
+    # = NO WINDOW (default, headless); anything else = WINDOW OPEN. PowerShell counts
+    # the string "0" as truthy, so the explicit -notmatch check is needed.
     $wantWindow = $env:REMOTE_TABS_WINDOW -and `
         ($env:REMOTE_TABS_WINDOW -notmatch '^(0|false|no|off)$')
     if ($wantWindow) {
-        # Window mode (REMOTE_TABS_WINDOW on): run pty_host in a MINIMIZED, visible
-        # console so its stdin is a real console — that re-enables pty_host's local
-        # input forwarding (type into the taskbar window, Korean/IME included). The
-        # self-gating lives in pty_host (enable_console_raw); here we just give it a
-        # console. -WindowStyle Minimized keeps it off-screen-but-reachable; Start-Process
-        # returns at once, so the launcher never blocks.
+        # Window-open mode: a console WINDOW is shown for the session. That gives
+        # pty_host a real console stdin, which re-enables its local input forwarding —
+        # focus the window and type directly (Korean/IME included). The self-gating
+        # lives in pty_host (enable_console_raw). We pass -WindowStyle Minimized as a
+        # courtesy, but the terminal host decides the actual placement (Windows Terminal
+        # ignores it and opens a normal window) — either way a window is shown, not
+        # hidden. Start-Process returns at once, so the launcher never blocks.
         $rest = $pyPre + @($hostPy, $inbox, '--', 'claude', '--remote-control')
         $argStr = ($rest | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
         $p = Start-Process $pyExe -ArgumentList $argStr `
             -WorkingDirectory $root -WindowStyle Minimized -PassThru
         [System.IO.File]::WriteAllText($pidFile, [string]$p.Id)
-        Write-Output "remote session started with keystroke bridge (pid $($p.Id), minimized window)"
+        Write-Output "remote session started with keystroke bridge (pid $($p.Id), window open)"
         Write-Output "inbox: $inbox"
         Write-Output "trigger built-ins, e.g.:  Add-Content '$inbox' '/clear'"
     } else {
