@@ -1,0 +1,70 @@
+#!/bin/sh
+# Queue a line into the CURRENT session's keystroke-bridge inbox, so the bridge
+# types it into the real TUI — the way to fire built-ins like /clear that the
+# model and hooks cannot. Single POSIX entry point on the Bash tool's PATH.
+#
+# Run it from inside a bridged session: open-remote-tab exports the inbox path as
+# $CLAUDE_BRIDGE_INBOX, and this just appends your line to it.
+#
+# Usage: send-key <line...>
+#   send-key /clear            # built-in command (the whole point)
+#   send-key /compact
+#   send-key !git status       # bash mode
+#   send-key "fix the bug"     # a plain prompt, typed into the TUI
+set -e
+
+if [ "$#" -eq 0 ]; then
+  echo "usage: send-key <line...>   (e.g. send-key /clear)" >&2
+  exit 2
+fi
+
+inbox="${CLAUDE_BRIDGE_INBOX:-}"
+if [ -z "$inbox" ]; then
+  echo "send-key: not in a keystroke-bridge session (CLAUDE_BRIDGE_INBOX is unset)." >&2
+  echo "             start the session with open-remote-tab so the bridge is running." >&2
+  exit 1
+fi
+
+# On Windows the env var is a native path (C:\...\file.inbox); normalize for sh.
+if command -v cygpath >/dev/null 2>&1; then
+  inbox="$(cygpath -u "$inbox")"
+fi
+
+if [ ! -d "$(dirname "$inbox")" ]; then
+  echo "send-key: inbox directory missing ($inbox) — is the bridge running?" >&2
+  exit 1
+fi
+
+line="$*"
+
+# Guard: refuse slash built-ins that would strand this one-shot bridge. We inject a
+# single line, so a command that then waits for more keyboard input (a picker/menu/
+# dialog) hangs the remote session. Everything else passes — plain prompts, !bash,
+# and slash commands that complete on the line (incl. with an arg, e.g.
+# `/model haiku`, `/plugin marketplace update`). Lists are conservative and
+# allow-by-default: an unlisted command is injected.
+case "$line" in
+  /*)
+    # Strands regardless of args (opens a UI that needs navigation).
+    always=" /login /logout /permissions /memory /agents /diff /doctor /rewind /ide /terminal-setup /scroll-speed /keybindings /schedule /routines /workflows /teleport /install-github-app /install-slack-app /setup-bedrock /setup-vertex /privacy-settings /statusline /remote-env "
+    # Interactive only when BARE — completes when given an argument on the line.
+    bare_picker=" /model /config /effort /advisor /mcp /plugin /theme /resume /review /color /copy "
+    set -f; set -- $line; set +f   # tokenize (glob-safe); $1=command, $#=token count
+    cmd=$1
+    case "$always" in
+      *" $cmd "*)
+        echo "send-key: '$cmd' opens an interactive UI that needs more input — the keystroke bridge can't drive it. Run it locally instead." >&2
+        exit 3 ;;
+    esac
+    if [ "$#" -eq 1 ]; then
+      case "$bare_picker" in
+        *" $cmd "*)
+          echo "send-key: bare '$cmd' opens a picker the bridge can't drive. Put the full choice on one line (e.g. '$cmd <value>')." >&2
+          exit 3 ;;
+      esac
+    fi
+    ;;
+esac
+
+printf '%s\n' "$line" >> "$inbox"   # one newline-terminated (completed) line
+echo "queued: $line"

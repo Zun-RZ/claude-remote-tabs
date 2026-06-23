@@ -200,8 +200,8 @@ def main(argv):
 
     # ── 로컬 콘솔 입력 포워딩 (REMOTE_TABS_WINDOW로 토글) ─────────────────────────
     # 포커스된 로컬 창에 친 키를 PTY로 전달한다. 런처가 pty_host를 어떻게 띄웠는지로
-    # self-gate한다: 기본(무창)은 stdin=DEVNULL이라 enable_console_raw가 None을 반환해
-    # 자동 no-op이고, REMOTE_TABS_WINDOW=1이면 런처가 최소화된 '보이는' 콘솔로 띄워
+    # self-gate한다: 기본(창 없음)은 stdin=DEVNULL이라 enable_console_raw가 None을
+    # 반환해 자동 no-op이고, REMOTE_TABS_WINDOW on이면 런처가 '보이는' 콘솔 창으로 띄워
     # stdin이 진짜 콘솔이 되어 포워딩이 활성화된다(한글 등 로컬 타이핑). 이 분기는
     # 콘솔 유무 한 곳만 보면 되도록 pty_host에서 환경변수를 직접 읽지 않는다.
     console = enable_console_raw()

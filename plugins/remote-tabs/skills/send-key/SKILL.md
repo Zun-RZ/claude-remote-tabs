@@ -1,9 +1,9 @@
 ---
 name: send-key
 description: Use INSIDE a remote-control session when the user's message starts
-  with "br.s …" or "bridge-send …" — inject the rest of the line as a TUI command
+  with "s.k …" or "send-key …" — inject the rest of the line as a TUI command
   into this session via the keystroke bridge (the model and hooks cannot type it
-  themselves). Triggers on e.g. "br.s /compact", "bridge-send /clear".
+  themselves). Triggers on e.g. "s.k /compact", "send-key /clear".
 ---
 
 # Fire a TUI command via the keystroke bridge
@@ -17,16 +17,19 @@ types each appended line into the TUI, so you trigger the command by writing to 
 ## Steps
 
 1. The message starts with the prefix; the command is the rest:
-   - `br.s X` or `bridge-send X` → the command is `X` (e.g. `/clear`, `!git status`)
+   - `s.k X` or `send-key X` → the command is `X` (e.g. `/clear`, `!git status`)
 2. Run it via the Bash tool:
    ```
-   bridge-send <command>
+   send-key <command>
    ```
-   `bridge-send` appends the line to `$CLAUDE_BRIDGE_INBOX`; the bridge then types
+   `send-key` appends the line to `$CLAUDE_BRIDGE_INBOX`; the bridge then types
    it into the TUI (slash/`!` lines get an ESC first to clear any open modal).
    Report the `queued: …` line back.
-3. If `bridge-send` prints `not in a keystroke-bridge session`, this session wasn't
+3. If `send-key` prints `not in a keystroke-bridge session`, this session wasn't
    started with the bridge — tell the user to open it with `open-remote-tab` and stop.
+4. If `send-key` exits with an error that the command "opens an interactive UI" or
+   is a "bare picker", that built-in needs more input than one line — relay the
+   message, and for a bare picker suggest the one-line form (e.g. `/model haiku`).
 
 Do **not** try to emulate `/clear` (or any built-in) yourself — only the injected
 keystroke fires it. Just queue the line and let the bridge do the typing.
