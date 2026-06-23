@@ -83,14 +83,14 @@ started inside a keystroke-injectable container with a background **inbox**
 watcher, so appending a line to the inbox **types it into the real TUI** and the
 built-in actually fires.
 
-- From your phone, just send **`/clear`** (or `br.s /clear`) to the session — the
+- From your phone, just send **`/clear`** (or `s.k /clear`) to the session — the
   bundled **`send-key`** skill recognizes it and queues it into the inbox so the
-  bridge types it into the TUI. (`send-key` runs the `bridge-send` / `br.s` helper,
+  bridge types it into the TUI. (`send-key` runs the `send-key` / `s.k` helper,
   a one-liner that appends the line to the inbox.)
-  The model can't `/clear` itself, but `bridge-send` makes the bridge inject it.
-  Works for `bridge-send /compact`, `bridge-send !git status`,
-  `bridge-send "a plain prompt"` too; `/`/`!` lines get an ESC first to clear any
-  open modal. (Under the hood: `bridge-send` appends to the inbox at
+  The model can't `/clear` itself, but `send-key` makes the bridge inject it.
+  Works for `send-key /compact`, `send-key !git status`,
+  `send-key "a plain prompt"` too; `/`/`!` lines get an ESC first to clear any
+  open modal. (Under the hood: `send-key` appends to the inbox at
   `$CLAUDE_BRIDGE_INBOX`, printed on start as `inbox: …`; any external writer —
   SSH, a synced file — works the same way.)
 - **Linux / WSL / macOS:** works out of the box (`tmux send-keys`).
@@ -140,14 +140,14 @@ A remote-control session opened this way is **not** persisted to local storage �
 |---|---|
 | `open-remote-tab` | Start one background remote-control session for the current project |
 | `close-remote-tab` | End the current session (after one confirmation, or instantly with the `#@stop#@` keyword) — keeps zombie sessions from piling up |
-| `send-key` | Inside a session, fire a TUI command (`/clear`, `/compact`, `!`bash, or `br.s …`) by injecting it through the keystroke bridge |
+| `send-key` | Inside a session, fire a TUI command (`/clear`, `/compact`, `!`bash, or `s.k …`) by injecting it through the keystroke bridge |
 
 ## How it works
 
-`bin/open-remote-tab`, `bin/close-remote-tab`, and `bin/bridge-send` are single POSIX entry points exposed on the Bash tool's `PATH`. Each detects the OS via `uname` (except `bridge-send`, which is OS-agnostic):
+`bin/open-remote-tab`, `bin/close-remote-tab`, and `bin/send-key` are single POSIX entry points exposed on the Bash tool's `PATH`. Each detects the OS via `uname` (except `send-key`, which is OS-agnostic):
 
 - **open — Windows** (Git Bash) → hands off to `scripts/open-remote-tab.ps1`. With `pywinpty` it launches `scripts/pty_host.py`, which owns a ConPTY around `claude --remote-control` and injects inbox lines (keystroke bridge); without it, it falls back to the original minimized PowerShell window (no injection). **Linux / macOS** → creates the detached `tmux` session and starts `scripts/bridge.sh` to inject inbox lines via `tmux send-keys`.
-- **bridge-send** (alias **br.s**) → appends its argument as one line to `$CLAUDE_BRIDGE_INBOX` (the session's inbox), so the bridge types it into the TUI. This is how `/clear` & co. are fired from a session.
+- **send-key** (alias **s.k**) → appends its argument as one line to `$CLAUDE_BRIDGE_INBOX` (the session's inbox), so the bridge types it into the TUI. This is how `/clear` & co. are fired from a session.
 - **close — Windows** → `scripts/close-remote-tab.ps1` walks up the process tree to the current `claude.exe`/`node.exe` and terminates it (the windowless bridge host — or the minimized fallback window — then exits on its own). **Linux / macOS** → kills the current `tmux` session, or walks up to the current `claude`/`node` process when not in `tmux`.
 
 ## License
