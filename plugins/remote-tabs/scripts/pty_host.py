@@ -17,6 +17,7 @@ from winpty import Backend, PtyProcess
 
 POLL_INTERVAL = 1.0  # Windows엔 inotify가 없어 단순 폴링
 ESC_SETTLE = 0.4     # 슬래시/배시 명령 주입 전 ESC를 보내고 모달이 닫힐 시간을 준다
+PASTE_SETTLE = 0.1   # bracketed paste 종료 후 제출 CR을 보내기 전 짧은 대기
 
 # PTY로의 write는 원래 두 곳(inbox 주입 / 로컬 콘솔 입력 전달)에서 서로 다른 스레드가
 # 한다. 이 락으로 직렬화해, 주입 명령의 ESC+명령 2단계 사이에 로컬 키가 끼어드는 오염을
@@ -81,7 +82,15 @@ def inject_new(proc, inbox, state):
             if line.startswith(("/", "!")):
                 proc.write("\x1b")
                 time.sleep(ESC_SETTLE)
-            proc.write(line + "\r")  # PTY는 줄 끝 CR
+            if line.startswith("!"):
+                # !ls를 생바이트로 쏘면 bash 모드(!) 진입이 안 잡힌다(실제 붙여넣기는 됨).
+                # 붙여넣기처럼 bracketed paste로 본문만 감싸고, 제출 CR은 페이스트 종료
+                # (\x1b[201~) 뒤에 따로 보낸다(브래킷 안의 CR은 개행으로 삽입돼 버린다).
+                proc.write("\x1b[200~" + line + "\x1b[201~")
+                time.sleep(PASTE_SETTLE)
+                proc.write("\r")
+            else:
+                proc.write(line + "\r")  # PTY는 줄 끝 CR
     write_offset(state, len(lines))
 
 
